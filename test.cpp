@@ -6,7 +6,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/features2d.hpp>
 #include <opencv2/calib3d.hpp>
-#include<opencv2/tracking.hpp>
+//#include<opencv2/tracking.hpp>
 
 using namespace std;
 
@@ -27,17 +27,17 @@ int main(){
     
     cout << "Width: " << framewidth << ", Height: " << frameheigth << endl;
 
-    cv::Ptr<cv::Tracker> tracker = cv::TrackerKCF::create();
-
-    video.read(frame);
-    cv::Rect2d trackingBox = cv::selectROI(frame, false);
-    tracker->init(frame, trackingBox);
+    //cv::Ptr<cv::Tracker> tracker = cv::TrackerKCF::create();
+//
+    //video.read(frame);
+    //cv::Rect2d trackingBox = cv::selectROI(frame, false);
+    //tracker->init(frame, trackingBox);
 
     while(video.read(frame)){
 
-        if(tracker->update(frame, trackingBox)){
-            cv::rectangle(frame, cv::Scala(0,0,255), 2, 8); 
-        }
+        //if(tracker->update(frame, trackingBox)){
+        //    cv::rectangle(frame, cv::Scala(0,0,255), 2, 8); 
+        //}
 
         //Displaying the frame
         cv::imshow("Video Display", frame);
