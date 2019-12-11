@@ -10,17 +10,19 @@ using namespace cv;
 using namespace std;
 
 int main() {
-    namedWindow("Teste", WINDOW_AUTOSIZE);
+    
     Mat image1, image2, imageAux;
     VideoCapture cap("blais/blais.mp4");//aqui vai o numero da webcam ou o path do video
     if (!cap.isOpened()) { //verifica se cap abriu como esperado
         cout << "camera ou arquivo em falta";
         return 1;
     }
-
     cap.read(image1);//aqui vai o path da imagem
+    cv::Rect2d r = cv::selectROI(image1);
+    cv::Mat img = image1(r) ;
+    cv::destroyAllWindows();
 
-    if (image1.empty()) { //verifica a imagem1
+    if (img.empty()) { //verifica a imagem1
         cout << "imagem 1 vazia";
         return 1;
     }
@@ -32,34 +34,36 @@ int main() {
             return 1;
         }
 
-      
         vector<KeyPoint> kp1, kp2;
         Mat descriptor1, descriptor2;
     
         //acho que o ORB e o unico q funciona no PC do cin
         //Ptr<Feature2D> orb = xfeatures2d::SIFT::create(400);
         //Ptr<Feature2D> orb = xfeatures2d::SURF::create(400);
-        Ptr<Feature2D> orb = ORB::create(400);
+        Ptr<Feature2D> orb = ORB::create(1000);
 
         //detecta as features da imagem
-        orb->detectAndCompute(image1, Mat(), kp1, descriptor1);
+        orb->detectAndCompute(img, Mat(), kp1, descriptor1);
         orb->detectAndCompute(image2, Mat(), kp2, descriptor2);
 
         //aqui desenha as features
-        drawKeypoints(image1, kp1, imageAux);
+        drawKeypoints(img, kp1, imageAux);
         drawKeypoints(image2, kp2, image2);
 
 
-        //Drawing matches
+        //Drawing matches 
         vector<DMatch> matches;
-        cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create("BruteForce-Hamming");
+        cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create("BruteForce");
         matcher->match(descriptor1, descriptor2, matches, cv::Mat());
 
         sort(matches.begin(), matches.end());
-
+        const int numGoodMatches = matches.size() * 0.15f;
+        matches.erase(matches.begin() + numGoodMatches, matches.end());
+        
         cv::Mat imMatches;
-        drawMatches(image1, kp1, image2, kp2, matches, imMatches);
-        imwrite("matches.jpg", imMatches);
+        
+        drawMatches(img, kp1, image2, kp2, matches, imMatches);
+        //imwrite("matches.jpg", imMatches);
 
         //Get keypoints from good matches
         vector<cv::Point2f> obj, scene;
@@ -69,30 +73,30 @@ int main() {
         }
 
         //Finding homography
-        cv::Mat h = cv::findHomography(obj, scene, RANSAC);
+        cv::Mat h = cv::findHomography(obj, scene, cv::RANSAC);
 
         //Get the corners of object
         vector<cv::Point2f> objCorners(4);
         objCorners[0] = cv::Point2f(0,0);
-        objCorners[1] = cv::Point2f(image1.cols ,0);
-        objCorners[2] = cv::Point2f(image1.cols , image1.rows);
-        objCorners[3] = cv::Point2f(0 ,image1.rows);
+        objCorners[1] = cv::Point2f(img.cols ,0);
+        objCorners[2] = cv::Point2f(img.cols , img.rows);
+        objCorners[3] = cv::Point2f(0 ,img.rows);
 
         vector<cv::Point2f> sceneCorners(4);
 
         cv::perspectiveTransform(objCorners, sceneCorners, h);
 
-        cv::line(imMatches, sceneCorners[0] + cv::Point2f(image1.cols, 0), sceneCorners[1] + cv::Point2f(image1.cols, 0), cv::Scalar(0, 255, 0), 4);
-        cv::line(imMatches, sceneCorners[1] + cv::Point2f(image1.cols, 0), sceneCorners[2] + cv::Point2f(image1.cols, 0), cv::Scalar(0, 255, 0), 4);
-        cv::line(imMatches, sceneCorners[2] + cv::Point2f(image1.cols, 0), sceneCorners[3] + cv::Point2f(image1.cols, 0), cv::Scalar(0, 255, 0), 4);
-        cv::line(imMatches, sceneCorners[3] + cv::Point2f(image1.cols, 0), sceneCorners[0] + cv::Point2f(image1.cols, 0), cv::Scalar(0, 255, 0), 4);
+        cv::line(imMatches, sceneCorners[0] + cv::Point2f(img.cols, 0), sceneCorners[1] + cv::Point2f(img.cols, 0), cv::Scalar(0, 255, 0), 4);
+        cv::line(imMatches, sceneCorners[1] + cv::Point2f(img.cols, 0), sceneCorners[2] + cv::Point2f(img.cols, 0), cv::Scalar(0, 255, 0), 4);
+        cv::line(imMatches, sceneCorners[2] + cv::Point2f(img.cols, 0), sceneCorners[3] + cv::Point2f(img.cols, 0), cv::Scalar(0, 255, 0), 4);
+        cv::line(imMatches, sceneCorners[3] + cv::Point2f(img.cols, 0), sceneCorners[0] + cv::Point2f(img.cols, 0), cv::Scalar(0, 255, 0), 4);
 
         //cv::imshow("Good Matches", matches);
 
         //cv::perspectiveTransform(point1, point2, h);
         //Removing not so good matches
-        //const int numGoodMatches = matches.size() * 0.15f;
-        //matches.erase(matches.begin() + numGoodMatches, matches.end());
+        //const int nummatches = matches.size() * 0.15f;
+        //matches.erase(matches.begin() + nummatches, matches.end());
 
 
         //o nome da imagem e case sensitive, cria janela pra 'teste' e usa a ja existente pra 'Teste'
